@@ -1,0 +1,16 @@
+# underlying 
+underlying: NSEFNO_BANKNIFTY
+
+# expiry 
+exp: H25
+
+# date range 
+start_date: '20250315'
+
+end_date: '20250319'
+
+# time steps in minuts 
+dt: 5
+
+# parent directory 
+parent_dir: /data/NSE/bindata_indices/
