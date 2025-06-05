@@ -19,4 +19,5 @@ pip install -e .
 Folder to store cache files for faster loading 
 ```bash
 mkdir cache 
+mkdir Tables 
 ```
