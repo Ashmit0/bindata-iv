@@ -47,11 +47,12 @@ def get_strike_gap( datesf2 , dates_log_path , inputs ) :
                     temp_df.append( df.copy() )
             else : 
                 if find_16 : 
-                    # tqdm.write('Completed Finding all the strike prices')
-                    # tqdm.write('-'*30)
-                    temp_df = pd.concat( temp_df , ignore_index= True )
-                    unique , counts = np.unique(np.diff(temp_df.Strike.unique()) , return_counts = True )
-                    st_gap.append( unique[counts == counts.max()].min() )
+                    if len( temp_df ) != 0  :
+                        temp_df = pd.concat( temp_df , ignore_index= True )
+                        unique , counts = np.unique(np.diff(temp_df.Strike.unique()) , return_counts = True )
+                        st_gap.append( unique[counts == counts.max()].min() )
+                    else : 
+                        tqdm.write(f"Underlying Future for {inputs['underlying']} does not exist on {date}, the contract might have expired. Droping this date .........")
                     break 
                 else : 
                     continue 
@@ -79,7 +80,7 @@ def fill_comn( df1 , df2 , col1 , col2 ) :
     df1.loc[common_idx , col1 ] = df2.loc[ common_idx , col2 ]
 
 
-def create_df( date , path , gap , inputs ) : 
+def create_df( date , path , gap , inputs  , files ) : 
     # init the df 
     df = init_df( date , inputs )
     
@@ -87,7 +88,7 @@ def create_df( date , path , gap , inputs ) :
     symbol = inputs['underlying'] + '_' + inputs['exp']
 
     # get the exp date : 
-    exp_date = get_exp_date(inputs['exp']) 
+    exp_date = get_exp_date(date , inputs , files ) 
 
     for chunk in pd.read_csv(path, chunksize=100000, usecols = [1,2,8] ) :
 
@@ -132,12 +133,16 @@ def create_df( date , path , gap , inputs ) :
         ).set_index('index')
         fill_comn( df , matched[matched.Type == 'PE'] , 'PE' , 'Close' )
         fill_comn( df , matched[matched.Type == 'CE'] , 'CE' , 'Close' )
+    
+    if( df.isna().any().any() ) : 
+        tqdm.write(f"Underlying Future for {inputs['underlying']} does not exist on {date}, the contract might have expired. Droping this date .........")
+    else : 
         df['t'] = (( exp_date - pd.to_datetime( date ).date() ).days + 1 )/365
     return df 
 
 
 
-def load_main_df( datesf1 , dates_log_path , st_gap , inputs ): 
+def load_main_df( datesf1 , dates_log_path , st_gap , inputs , files  ): 
     print('Initiating Main DataFrame Processing:')
     df_list = []
     bar = tqdm(zip(datesf1 , dates_log_path , st_gap ) , total = len( datesf1) , ncols = 125 )
@@ -159,7 +164,7 @@ def load_main_df( datesf1 , dates_log_path , st_gap , inputs ):
         except : 
             # init the data frame : 
             bar.set_postfix_str(f'Creating {file_name}. This is a one time process .....')
-            df = create_df( date , path , gap , inputs )
+            df = create_df( date , path , gap , inputs , files  )
             with open( file_name , 'wb' ) as f : 
                 pickle.dump( df , f )
             df = df.reindex(
@@ -169,10 +174,14 @@ def load_main_df( datesf1 , dates_log_path , st_gap , inputs ):
                     freq= f"{inputs['dt']}min"
                 )
             )
-        df_list.append( df )
         
-    main_df = pd.concat( df_list)
-    return main_df 
+        df_list.append( df )
+
+    if( len( df_list ) == 0 ) :
+        raise ValueError('******No Valid Data Found******') 
+    else : 
+        main_df = pd.concat( df_list)
+        return main_df 
 
 
 def get_ivs( main_df , r): 

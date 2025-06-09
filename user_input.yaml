@@ -2,12 +2,12 @@
 underlying: NSEFNO_BANKNIFTY
 
 # expiry 
-exp: H25
+exp: F25
 
 # date range 
-start_date: '20250315'
+start_date: '20241231'
 
-end_date: '20250319'
+end_date: '20250101'
 
 # time steps in minuts 
 dt: 5
@@ -19,4 +19,8 @@ parent_dir: /data/NSE/bindata_indices/
 r : 6.5 
 
 # output file name to store the result (with .csv extention): 
-outfile : 'result.csv'
+outfile : 'result_20241231_20250101_F25.csv'
+
+# Path to contract Master : 
+contractp : /home/ashmit/contractc
+use_contract : False 

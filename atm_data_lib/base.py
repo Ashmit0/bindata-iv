@@ -44,13 +44,14 @@ class atm_data:
         # lof file paths : 
         self.dates_log_path = [ get_log_file_path( date ) for date in self.datesf1 ]
 
+        self.files = [f[:7] for f in os.listdir(inputs['contractp']) if os.path.isfile(os.path.join(inputs['contractp'], f))]
     
     
     def load_data(self)-> None : 
         # load st gap 
         self.st_gap = get_strike_gap( self.datesf2 , self.dates_log_path , self.inputs )
         # load main df : 
-        self.main_df = load_main_df( self.datesf1 , self.dates_log_path , self.st_gap , self.inputs )
+        self.main_df = load_main_df( self.datesf1 , self.dates_log_path , self.st_gap , self.inputs  , self.files)
 
         get_ivs( self.main_df , self.inputs['r'])
 
