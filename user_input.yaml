@@ -14,3 +14,9 @@ dt: 5
 
 # parent directory 
 parent_dir: /data/NSE/bindata_indices/
+
+# Intrest Rate (in percentage) : 
+r : 6.5 
+
+# output file name to store the result (with .csv extention): 
+outfile : 'result.csv'
