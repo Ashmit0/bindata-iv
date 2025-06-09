@@ -98,6 +98,18 @@ def get_code_date( code : str ):
 
 
 def get_file_name(date , inputs ) : 
-    return f"cache/{date}_{inputs['underlying']}_{inputs['exp']}_dt_{inputs['dt']}.pickel" 
+    return f"cache/{date}_{inputs['underlying']}_{inputs['exp']}.pickel" 
 
+
+india_holidays  = holidays.India()
+
+def get_exp_date(code):
+    month = nse_code_to_month[code[0]]
+    year = 2000 + int(code[1:])
+    date = last_thursday( year , month )
+
+    while date in india_holidays : 
+        date  = date - datetime.timedelta(days=1)
+
+    return date 
 

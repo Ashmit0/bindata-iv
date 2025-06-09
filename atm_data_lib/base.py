@@ -49,6 +49,10 @@ class atm_data:
     def load_data(self)-> None : 
         # load st gap 
         self.st_gap = get_strike_gap( self.datesf2 , self.dates_log_path , self.inputs )
-
         # load main df : 
         self.main_df = load_main_df( self.datesf1 , self.dates_log_path , self.st_gap , self.inputs )
+
+        get_ivs( self.main_df , self.inputs['r'])
+
+    def save( self ) : 
+        self.main_df.to_csv( self.inputs['outfile'])

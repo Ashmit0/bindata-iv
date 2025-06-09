@@ -11,6 +11,7 @@ import calendar
 import holidays 
 
 from datetime import time 
+import py_vollib_vectorized as pvl 
 
 plt.rcParams['font.size'] = 14 
 plt.rcParams['figure.figsize'] = (15,5)
@@ -84,7 +85,12 @@ def create_df( date , path , gap , inputs ) :
     
     # start reading the data in chunks :
     symbol = inputs['underlying'] + '_' + inputs['exp']
+
+    # get the exp date : 
+    exp_date = get_exp_date(inputs['exp']) 
+
     for chunk in pd.read_csv(path, chunksize=100000, usecols = [1,2,8] ) :
+
         # convert the time to index : 
         chunk.Time = pd.to_datetime( date + ' ' + chunk.Time  )
         chunk = chunk.set_index('Time')
@@ -126,6 +132,7 @@ def create_df( date , path , gap , inputs ) :
         ).set_index('index')
         fill_comn( df , matched[matched.Type == 'PE'] , 'PE' , 'Close' )
         fill_comn( df , matched[matched.Type == 'CE'] , 'CE' , 'Close' )
+        df['t'] = (( exp_date - pd.to_datetime( date ).date() ).days + 1 )/365
     return df 
 
 
@@ -142,13 +149,56 @@ def load_main_df( datesf1 , dates_log_path , st_gap , inputs ):
         try : 
             with open( file_name , 'rb' ) as f : 
                 df = pickle.load( f )
+                df = df.reindex(
+                    pd.date_range(
+                        start =  date +  ' ' + "09:16:01" , 
+                        end = date  + ' ' + "15:30:01" , 
+                        freq= f"{inputs['dt']}min"
+                    )
+                )
         except : 
             # init the data frame : 
             bar.set_postfix_str(f'Creating {file_name}. This is a one time process .....')
             df = create_df( date , path , gap , inputs )
             with open( file_name , 'wb' ) as f : 
                 pickle.dump( df , f )
+            df = df.reindex(
+                pd.date_range(
+                    start =  date +  ' ' + "09:16:01" , 
+                    end = date  + ' ' + "15:30:01" , 
+                    freq= f"{inputs['dt']}min"
+                )
+            )
         df_list.append( df )
         
     main_df = pd.concat( df_list)
     return main_df 
+
+
+def get_ivs( main_df , r): 
+    main_df['CE_IV'] = pvl.implied_volatility.vectorized_implied_volatility_black(
+        price = main_df['CE'] , 
+        F = main_df['Spot'] , 
+        K = main_df['ATM_Strike'] , 
+        t = main_df['t'] , 
+        r = r/100 , 
+        flag = 'c' , 
+        on_error = 'warn' , 
+        return_as = 'array'
+    ) * 100 
+
+
+    # for put options using the black 76 model ; 
+    main_df['PE_IV'] = pvl.implied_volatility.vectorized_implied_volatility_black(
+        price = main_df['PE'] , 
+        F = main_df['Spot'] , 
+        K = main_df['ATM_Strike'] , 
+        t = main_df['t'] , 
+        r = r/100 , 
+        flag = 'p' , 
+        on_error = 'warn' , 
+        return_as = 'array'
+    ) * 100 
+
+    main_df.drop( columns = ['ATM_Strike' , 'PE' , 'CE' , 't' ] , inplace = True )
+    main_df.index.name = 'TimeStamp'
