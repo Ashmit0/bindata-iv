@@ -173,8 +173,8 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-cache/
-
 Plots_Folder 
 
 Tables 
+
+*.pickel 
