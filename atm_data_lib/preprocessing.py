@@ -41,7 +41,7 @@ def get_strike_gap( datesf2 , dates_log_path , inputs ) :
                 if not find_16 : 
                     find_16 = True 
                 # keep only options symbols 
-                df = df[(df.Symbol.str.startswith(symbol) )& (df.Symbol != symbol) ] 
+                df = df[(df.Symbol.str.startswith(symbol + '_') )& (df.Symbol != symbol) ] 
                 if not df.empty : 
                     df['Strike'] = df.Symbol.str.split('_' , expand = True )[3].astype(float)
                     temp_df.append( df.copy() )
@@ -113,7 +113,7 @@ def create_df( date , path , gap , inputs  , files ) :
         
         # GET the ATM PUT and CALL close prices : 
         chunk  = chunk[
-            chunk['Symbol'].str.startswith(symbol) & 
+            chunk['Symbol'].str.startswith(symbol + '_') & 
             (chunk['Symbol'] != symbol ) 
         ]
         split_cols = chunk['Symbol'].str.split('_', expand=True)
@@ -135,7 +135,7 @@ def create_df( date , path , gap , inputs  , files ) :
         fill_comn( df , matched[matched.Type == 'CE'] , 'CE' , 'Close' )
     
     if( df.isna().any().any() ) : 
-        tqdm.write(f"Underlying Future for {inputs['underlying']} does not exist on {date}, the contract might have expired. Droping this date .........")
+        raise ValueError(f"Underlying Future for {inputs['underlying']} does not exist on {date}, the contract might have expired. Droping this date .........")
     else : 
         df['t'] = (( exp_date - pd.to_datetime( date ).date() ).days + 1 )/365
     return df 
