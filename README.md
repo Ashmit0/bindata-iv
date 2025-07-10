@@ -24,14 +24,23 @@ mkdir cache
 ### Usage 
 
 First Make Sure to appropriately fill the `user_input.yaml` file. 
+
 	- `dt` : Time window after which to calculate the IV. 
+
 	- `parent_dir` : Path to folder with contains the bindata for each date in folders named in "YYYYMMDD" format. 
+
 	- `r` : The intrest rate in percentage. 
+
 	- `outfile` : Path to store the output .csv file that contains final result. 
+
 	- `contractp` : Path to the contract master files. 
+
 	- `underlying` (Optional) : Underlying to calculate the IVs for.
+
 	- `exp` (Optional) : expiary code for the contract of intrest, example 'K25' for the month of may.
+
 	- `start_date` (Optional) : ~ 
+
 	- `end_date`  (Optional)  : range of dates in "YYYYMMDD" format to calcute the IVs. (Make sure to pass strings here like '20250519'. Its okay to include weekends) 
 
 
