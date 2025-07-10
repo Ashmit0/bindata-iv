@@ -19,7 +19,7 @@ parent_dir: /data/NSE/bindata_indices/
 r : 6.5 
 
 # output file name to store the result (with .csv extention): 
-outfile : 'result_20241231_20250101_F25.csv'
+outfile : /home/ashmit/work/ATM_IV/result
 
 # Path to contract Master : 
 contractp : /home/ashmit/contractc
