@@ -56,4 +56,7 @@ class atm_data:
         get_ivs( self.main_df , self.inputs['r'])
 
     def save( self ) : 
-        self.main_df.to_csv( self.inputs['outfile'])
+        self.main_df.to_csv( os.path.join(self.inputs['outfile'] , '_'.join([self.inputs['underlying'],self.inputs['start_date'],self.inputs['end_date'] , self.inputs['exp'] , 'atm_iv.csv'])))
+
+
+
