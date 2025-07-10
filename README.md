@@ -63,12 +63,14 @@ python getiv.py NSEFNO_BANKNIFTY 20250517 20250523 K25
 ``` 
 
 Note: In case both terminal inputs and yaml inputs are provided, the yaml inputs are ignored. 
+
 Note: To get the data for a single_date simply skip the end_date input in the terminal: 
+
 ```bash 
 python getiv.py NSEFNO_NIFTY 20250101 F25
 ``` 
 
 ### Result Files 
 
-the result files are named as `{underlying}_{start_date}_{end_date}_{exp}_atm_iv.csv in the path provided in the `user_inputs.yaml` file. 
+the result files are named as `{underlying}_{start_date}_{end_date}_{exp}_atm_iv.csv` in the path provided in the `user_inputs.yaml` file. 
  
