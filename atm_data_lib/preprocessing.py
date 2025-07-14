@@ -69,13 +69,15 @@ def init_df(date , inputs ) :
         freq= f"{inputs['dt']}min"
     )
 
-    cols = ['Spot', 'ATM_Strike' , 'PE', 'CE']
+    cols = ['Spot', 'ATM_Strike' , 'PE_IV', 'CE_IV']
     df[cols] = np.nan
 
     return df 
 
 
 def fill_comn( df1 , df2 , col1 , col2 ) : 
+    if df2.empty : 
+        return 
     common_idx = df1.index.intersection(df2.index)
     df1.loc[common_idx , col1 ] = df2.loc[ common_idx , col2 ]
 
@@ -123,7 +125,6 @@ def create_df( date , path , gap , inputs  , files ) :
         df_reset = df.reset_index()
         chunk.reset_index( inplace = True )
 
-        # Put : 
         matched = pd.merge(
             df_reset, 
             chunk, 
@@ -131,13 +132,35 @@ def create_df( date , path , gap , inputs  , files ) :
             right_on=['Time', 'Strike'], 
             how='inner'
         ).set_index('index')
-        fill_comn( df , matched[matched.Type == 'PE'] , 'PE' , 'Close' )
-        fill_comn( df , matched[matched.Type == 'CE'] , 'CE' , 'Close' )
+        fill_comn( df , matched[matched.Type == 'PE'] , 'PE_IV' , 'Close' )
+        fill_comn( df , matched[matched.Type == 'CE'] , 'CE_IV' , 'Close' )
+        
+
+        for sign , flag in zip( [ '+' , '' ] , [ False , True ] ) : 
+            for k in range(1,int(inputs['num_gaps'])+1):
+
+                if flag : 
+                    k = -k 
+                
+                strike_col_name = f'ATM{sign}{k}_Strike'  
+                df_reset.loc[ : , strike_col_name ] = (df['ATM_Strike'] + k*gap).values  
+                df.loc[ : , strike_col_name ] = (df['ATM_Strike'] + k*gap).values 
+                matched = pd.merge(
+                    df_reset, 
+                    chunk, 
+                    left_on=['index', strike_col_name], 
+                    right_on=['Time', 'Strike'], 
+                    how='inner'
+                ).set_index('index')
+                if not matched.empty : 
+                    fill_comn( df , matched[matched.Type == 'PE'] ,f'PE{sign}{k}_IV' , 'Close' )
+                    fill_comn( df , matched[matched.Type == 'CE'] ,f'CE{sign}{k}_IV' , 'Close' )
+                
     
-    if( df.isna().any().any() ) : 
-        raise ValueError(f"Underlying Future for {inputs['underlying']} does not exist on {date}, the contract might have expired. Droping this date .........")
-    else : 
-        df['t'] = (( exp_date - pd.to_datetime( date ).date() ).days + 1 )/365
+    #if( df.isna().any().any() ) : 
+        #raise ValueError(f"Underlying Future for {inputs['underlying']} does not exist on {date}, the contract might have expired. Droping this date .........")
+    #else : 
+    df['t'] = (( exp_date - pd.to_datetime( date ).date() ).days + 1 )/365
     return df 
 
 
@@ -163,7 +186,7 @@ def load_main_df( datesf1 , dates_log_path , st_gap , inputs , files  ):
                 )
         except : 
             # init the data frame : 
-            bar.set_postfix_str(f'Creating {file_name}. This is a one time process .....')
+            bar.set_postfix_str(f'Creating {file_name}.')
             df = create_df( date , path , gap , inputs , files  )
             with open( file_name , 'wb' ) as f : 
                 pickle.dump( df , f )
@@ -184,30 +207,68 @@ def load_main_df( datesf1 , dates_log_path , st_gap , inputs , files  ):
         return main_df 
 
 
-def get_ivs( main_df , r): 
-    main_df['CE_IV'] = pvl.implied_volatility.vectorized_implied_volatility_black(
-        price = main_df['CE'] , 
-        F = main_df['Spot'] , 
-        K = main_df['ATM_Strike'] , 
-        t = main_df['t'] , 
-        r = r/100 , 
-        flag = 'c' , 
-        on_error = 'warn' , 
-        return_as = 'array'
-    ) * 100 
+def get_ivs( main_df , r , inputs ): 
+   
+
+    # Mask for non-NaN rows
+    mask = main_df['PE_IV'].notna()
+
+    # Apply only where PE_IV is not NaN
+    main_df.loc[mask, 'PE_IV'] =  pvl.implied_volatility.vectorized_implied_volatility_black(
+            price = main_df.loc[mask, 'PE_IV'],
+            F     = main_df.loc[mask, 'Spot'],
+            K     = main_df.loc[mask, 'ATM_Strike'],
+            t     = main_df.loc[mask, 't'],
+            r     = r / 100,
+            flag  = 'p',
+            on_error = 'warn',
+            return_as = 'array'
+        ) * 100
+    
+    
+    # Mask for non-NaN rows
+    mask = main_df['CE_IV'].notna()
+
+    # Apply only where PE_IV is not NaN
+    main_df.loc[mask, 'CE_IV'] =  pvl.implied_volatility.vectorized_implied_volatility_black(
+            price = main_df.loc[mask, 'CE_IV'],
+            F     = main_df.loc[mask, 'Spot'],
+            K     = main_df.loc[mask, 'ATM_Strike'],
+            t     = main_df.loc[mask, 't'],
+            r     = r / 100,
+            flag  = 'c',
+            on_error = 'warn',
+            return_as = 'array'
+        ) * 100
+
+    for sign , flag in zip( [ '+' , '' ] , [ False , True ] ) : 
+        for k in range(1,int(inputs['num_gaps'])+1):
+
+            if flag : 
+                k = -k 
+
+            for option_name, option_type  in zip(  [ f'PE{sign}{k}_IV' , f'CE{sign}{k}_IV' ] , [ 'p' , 'c' ] ) :
+                    
+                    if option_name not in main_df.columns : 
+                        main_df.loc[ : , option_name ] = -1 
+                        continue 
 
 
-    # for put options using the black 76 model ; 
-    main_df['PE_IV'] = pvl.implied_volatility.vectorized_implied_volatility_black(
-        price = main_df['PE'] , 
-        F = main_df['Spot'] , 
-        K = main_df['ATM_Strike'] , 
-        t = main_df['t'] , 
-        r = r/100 , 
-        flag = 'p' , 
-        on_error = 'warn' , 
-        return_as = 'array'
-    ) * 100 
+                    # Mask for non-NaN rows
+                    mask = main_df[option_name].notna()
 
-    main_df.drop( columns = ['ATM_Strike' , 'PE' , 'CE' , 't' ] , inplace = True )
+                    # Apply only where PE_IV is not NaN
+                    main_df.loc[mask, option_name] = pvl.implied_volatility.vectorized_implied_volatility_black(
+                            price = main_df.loc[mask, option_name],
+                            F     = main_df.loc[mask, 'Spot'],
+                            K     = main_df.loc[mask,f'ATM{sign}{k}_Strike'],
+                            t     = main_df.loc[mask, 't'],
+                            r     = r / 100,
+                            flag  = option_type,
+                            on_error = 'warn',
+                            return_as = 'array'
+                        ) * 100
+
+    main_df.fillna( -1 , inplace = True ) 
+    main_df.drop( columns = [ 't' ] , inplace = True )
     main_df.index.name = 'TimeStamp'

@@ -24,3 +24,6 @@ outfile : /home/ashmit/work/ATM_IV/result
 # Path to contract Master : 
 contractp : /home/ashmit/contractc
 use_contract : False 
+
+# number of +- strike gap to look at : 
+num_gaps : 4 

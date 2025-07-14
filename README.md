@@ -43,6 +43,8 @@ First Make Sure to appropriately fill the `user_input.yaml` file.
 
 	- `end_date`  (Optional)  : range of dates in "YYYYMMDD" format to calcute the IVs. (Make sure to pass strings here like '20250519'. Its okay to include weekends) 
 
+	- `num_gaps` (Optional) : number of strikes above and bellow the ATM strike to consider for analyis. 
+
 
 To make a query for an underlying with a specified expiary for a given date range, the `underlying`, `start_date`, `end_date` and `exp` must be provided either in the yaml file or in the teminal command itself. 
 
@@ -55,11 +57,11 @@ python getiv.py
 
 To give inputs from the terminal use : 
 ```bash 
-python getiv.py underlying start_date end_date exp
+python getiv.py underlying start_date end_date exp num_gaps
 ```
 example : 
 ```bash 
-python getiv.py NSEFNO_BANKNIFTY 20250517 20250523 K25
+python getiv.py NSEFNO_BANKNIFTY 20250517 20250523 K25 10
 ``` 
 
 Note: In case both terminal inputs and yaml inputs are provided, the yaml inputs are ignored. 
@@ -67,10 +69,10 @@ Note: In case both terminal inputs and yaml inputs are provided, the yaml inputs
 Note: To get the data for a single_date simply skip the end_date input in the terminal: 
 
 ```bash 
-python getiv.py NSEFNO_NIFTY 20250101 F25
+python getiv.py NSEFNO_NIFTY 20250101 F25 7
 ``` 
 
 ### Result Files 
 
-the result files are named as `{underlying}_{start_date}_{end_date}_{exp}_atm_iv.csv` in the path provided in the `user_inputs.yaml` file. 
+the result files are named as `{underlying}_{start_date}_{end_date}_{exp}_{num_gaps}_atm_iv.csv` in the path provided in the `user_inputs.yaml` file. 
  

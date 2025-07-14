@@ -61,12 +61,12 @@ class atm_data:
         # load main df : 
         self.main_df = load_main_df( self.datesf1 , self.dates_log_path , self.st_gap , self.inputs  , self.files)
 
-        get_ivs( self.main_df , self.inputs['r'])
+        get_ivs( self.main_df , self.inputs['r'] , self.inputs )
 
     def save( self ) :
         if not len(self.datesf1) : 
             return 
-        self.main_df.to_csv( os.path.join(self.inputs['outfile'] , '_'.join([self.inputs['underlying'],self.inputs['start_date'],self.inputs['end_date'] , self.inputs['exp'] , 'atm_iv.csv'])))
+        self.main_df.to_csv( os.path.join(self.inputs['outfile'] , '_'.join([self.inputs['underlying'],self.inputs['start_date'],self.inputs['end_date'] , self.inputs['exp'] , self.inputs['num_gaps'] , 'atm_iv.csv'])))
 
 
 
